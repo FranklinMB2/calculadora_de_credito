@@ -33,21 +33,25 @@ def actualizar_capital_por_meses(capital, tasa, meses_mora):
 
 
 def calcular_meses_de_mora(fecha_pago_esperado, fecha_pago_real):
-    """Retorna cantidad de meses completos de mora."""
-    if fecha_pago_real <= fecha_pago_esperado:
-        return 0  # pagó a tiempo
+    """Calcula meses completos de mora considerando años, meses y días."""
 
-    # calcular diferencia de meses
+    if fecha_pago_real <= fecha_pago_esperado:
+        return 0  # pagó puntualmente
+
+    # 1. Diferencia básica de años y meses
     years_diff = fecha_pago_real.year - fecha_pago_esperado.year
     months_diff = fecha_pago_real.month - fecha_pago_esperado.month
 
     meses = years_diff * 12 + months_diff
 
-    # Si el día real es menor que el día esperado → no cuenta mes completo
+    # 2. Ajuste según los días exactos
+    # Si todavía no ha llegado al día del mes esperado → NO es mes completo
     if fecha_pago_real.day < fecha_pago_esperado.day:
         meses -= 1
 
+    # No dejar valores negativos
     return max(0, meses)
+
 
 
 def main():
