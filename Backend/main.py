@@ -1,16 +1,20 @@
 from datetime import datetime, timedelta
+from typing import Dict, Any
 import math
 
+# =================================================================
+# Archivo: calculadora_simulacion_terminal.py
+# Propósito: Lógica de cálculo de crédito con manejo de mora por interés
+# =================================================================
 
 # ==================== FUNCIONES DE CÁLCULO ====================
 
-def calcular_cuota_fija(capital, tasa, meses):
+def calcular_cuota_fija(capital: float, tasa: float, meses: int) -> float:
     """
-    Cálculo de cuota fija, con manejo de tasa 0%.
+    Cálculo de cuota fija (Sistema Francés), con manejo de tasa 0%.
     """
     tasa_decimal = tasa / 100
     
-    # Si el capital es 0 o la deuda ya se pagó, la cuota es 0.
     if meses <= 0 or capital <= 0:
         return 0
 
@@ -21,7 +25,6 @@ def calcular_cuota_fija(capital, tasa, meses):
         numerador = tasa_decimal * (1 + tasa_decimal)**meses
         denominador = (1 + tasa_decimal)**meses - 1
         if denominador == 0:
-             # Este caso ocurre si el interés es 0 y meses es 0, pero ya está cubierto arriba.
              return capital
              
         cuota = capital * (numerador / denominador)
@@ -30,7 +33,7 @@ def calcular_cuota_fija(capital, tasa, meses):
         return float('inf')
 
 
-def sumar_un_mes(fecha):
+def sumar_un_mes(fecha: datetime.date) -> datetime.date:
     """Devuelve la misma fecha del siguiente mes, corrigiendo días inexistentes."""
     mes = fecha.month + 1
     año = fecha.year
@@ -45,7 +48,7 @@ def sumar_un_mes(fecha):
         next_month_start = (fecha.replace(day=1, month=mes, year=año) + timedelta(days=32)).replace(day=1)
         return next_month_start - timedelta(days=1)
 
-# ==================== LÓGICA PRINCIPAL ====================
+# ==================== LÓGICA PRINCIPAL DE SIMULACIÓN ====================
 
 def main():
     print("=== CALCULADORA DE CRÉDITO (Continuación hasta Saldo Cero) ===\n")
@@ -95,13 +98,11 @@ def main():
         fecha_limite_actual = sumar_un_mes(fecha_limite_actual)
         
         # El número de meses restantes para el recálculo debe basarse en el plazo original
-        # Menor o igual al plazo original, usamos el restante. Mayor, usamos 1 mes para recalcular.
         if mes_actual <= meses_plazo_original:
             meses_restantes_para_cuota = meses_plazo_original - mes_actual + 1
             es_plazo_extra = False
         else:
-            # Si ya pasamos el plazo original, recalcula la cuota como si fuera a pagar en 1 mes.
-            # Esto fuerza a que la cuota esperada sea igual al saldo + intereses.
+            # Si ya pasamos el plazo original, usamos 1 mes para forzar la liquidación
             meses_restantes_para_cuota = 1 
             es_plazo_extra = True
 
@@ -119,18 +120,23 @@ def main():
              
         print(f"Fecha límite de pago: {fecha_limite_actual}")
 
-        # 1.  CONFIRMACIÓN DE PAGO
+        # 1. CONFIRMACIÓN DE PAGO
         pago_confirmado_str = input(f"¿Se realizó algún pago en el mes {mes_actual}? (s/n): ").lower()
         hubo_pago = (pago_confirmado_str == 's' or pago_confirmado_str == 'si')
 
-        # 2. GESTIÓN DE INCUMPLIMIENTO/PAGO
+        # 2. CALCULAR INTERÉS PERIÓDICO (Necesario para ambos casos: Mora o Pago)
+        interes_periodo = saldo * (interes / 100)
+        
+        # 3. GESTIÓN DE INCUMPLIMIENTO/PAGO
         if not hubo_pago:
-            # === INCUMPLIMIENTO TOTAL (PAGO CERO) ===
+            # === INCUMPLIMIENTO TOTAL (APLICAR SOLO INTERÉS) ===
             print("\n¡INCUMPLIMIENTO TOTAL! No se realizó el pago este mes.")
             
-            # 2a. LÓGICA DE PENALIDAD: SUMAR LA CUOTA ESPERADA AL SALDO
-            saldo += cuota_esperada
-            print(f"Se aplicó un cargo de ${cuota_esperada:,.2f} al saldo (Cuota Faltante).")
+            # LÓGICA DE PENALIDAD: SUMAR SOLO EL INTERÉS GENERADO AL SALDO
+            saldo += interes_periodo
+            
+            print(f"Se aplicó un cargo de ${interes_periodo:,.2f} al saldo (Solo Interés de la Mora).")
+            print(f"La cuota esperada de ${cuota_esperada:,.2f} NO fue cargada al capital.")
             
         else:
             # === PAGO REALIZADO ===
@@ -145,10 +151,7 @@ def main():
             
             print("-" * 35)
 
-            # 3. AMORTIZACIÓN REAL Y GESTIÓN DE SALDO (Solo si hubo pago)
-            
-            # Se calcula el interés generado sobre el saldo actual 
-            interes_periodo = saldo * (interes / 100)
+            # 4. AMORTIZACIÓN REAL Y GESTIÓN DE SALDO (Solo si hubo pago)
             
             if pago < interes_periodo:
                 # Pago < Interés: Capitalización. El saldo SUBE.
@@ -168,11 +171,11 @@ def main():
                     extra = pago - cuota_esperada
                     print(f"¡Pago EXTRA de capital por ${extra:,.2f}!")
 
-        # 4. Ajuste final del saldo
+        # 5. Ajuste final del saldo
         if saldo < 0:
             saldo = 0
             
-        print(f"\n*** Saldo después del pago: ${saldo:,.2f} ***\n")
+        print(f"\n*** Saldo después del procesamiento: ${saldo:,.2f} ***\n")
 
     # ============= FIN DEL PROCESO =============
     print("\n======================================")
