@@ -1,18 +1,9 @@
 from datetime import datetime, timedelta
 import math
 
-# ============================================================
-#        CALCULADORA COMPLETA DE CRÉDITO CON MORA
-#        - Cuotas fijas (método francés)
-#        - Mora automática si no paga o paga incompleto
-#        - Recalculo de cuotas cuando hay mora o pagos parciales
-#        - Evita saldos negativos y cuotas negativas
-#        - Pagos adelantados reducen saldo
-# ============================================================
-
 
 def calcular_cuota_fija(capital, tasa, meses):
-    """Cálculo de cuota fija (método francés)."""
+    """Cálculo de cuota"""
     tasa_decimal = tasa / 100
     if meses == 0:
         return 0
